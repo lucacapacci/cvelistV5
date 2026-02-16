@@ -1,46 +1,31 @@
-name: Repo Sync
-on:
-  schedule:
-    - cron: '0 */1 * * *' # Runs every hour
-  workflow_dispatch:
-
-jobs:
-  sync-code:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Sync and Clean
+- name: Sync
         run: |
           # 1. Setup identity
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 2. SAVE your sync file to the runner's home directory
+          # 2. Increase Git limits for large repo handling
+          git config --global http.postBuffer 524288000
+          git config --global core.compression 0
+
+          # 3. SAVE your sync file
           cp .github/workflows/sync.yml /home/runner/sync.yml_backup
 
-          # 3. Add source and fetch main (cvelistV5 uses 'main')
+          # 4. Add source and fetch ONLY the latest commit
           git remote add source https://github.com/CVEProject/cvelistV5.git
           git fetch source main --depth=1
 
-          # 4. Overwrite your local branch with their main
+          # 5. Overwrite local state
           git reset --hard source/main
 
-          # 5. Clean their workflows/meta files so GitHub doesn't block the push
-          # This ensures your own sync.yml is the only workflow that exists
+          # 6. Clean and Restore Workflows
           rm -rf .github/workflows
-
-          # 6. Restore YOUR sync file from the backup location
           mkdir -p .github/workflows
           cp /home/runner/sync.yml_backup .github/workflows/sync.yml
 
-          # 7. Push to YOUR main branch
-          # Using --force is necessary because we are overwriting history to match source
+          # 7. Push with optimized settings
           git add .
           git commit -m "Sync CVE Data: $(date)" || echo "No changes to sync"
-          git push origin main --force
+          
+          # Use '--thin' to reduce data transfer size
+          git push origin main --force --thin
