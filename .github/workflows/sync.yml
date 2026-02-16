@@ -1,7 +1,7 @@
-name: Repo Sync
+name: Repo Sync (Full)
 on:
   schedule:
-    - cron: '0 */1 * * *'
+    - cron: '0 */2 * * *' # Running every 2 hours as this takes longer
   workflow_dispatch:
 
 jobs:
@@ -15,39 +15,43 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync and Clean
+      - name: Sync and Chunked Push
         run: |
           # 1. Setup identity
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 2. Optimization for Massive Repositories
-          # Increase buffer size to 500MB to prevent 'index-pack' timeouts
           git config --global http.postBuffer 524288000
-          # Disable compression to save CPU/Memory on the runner during push
-          git config --global core.compression 0
-          # Increase the amount of data we can receive
-          git config --global http.maxRequestBuffer 100M
 
-          # 3. SAVE your sync file
+          # 2. SAVE your sync file
           cp .github/workflows/sync.yml /home/runner/sync.yml_backup
 
-          # 4. Add source and fetch ONLY the latest state
+          # 3. Add source and fetch
           git remote add source https://github.com/CVEProject/cvelistV5.git
           git fetch source main --depth=1
 
-          # 5. Overwrite your local branch with their main
-          git reset --hard source/main
+          # 4. Move to the latest state locally (but don't commit yet)
+          git reset --soft source/main
 
-          # 6. Clean their workflows so GitHub doesn't block the push
+          # 5. Clean and Restore Workflows (so we don't push upstream workflows)
           rm -rf .github/workflows
-          
-          # 7. Restore YOUR sync file
           mkdir -p .github/workflows
           cp /home/runner/sync.yml_backup .github/workflows/sync.yml
 
-          # 8. Push to YOUR main branch
-          # --thin reduces the amount of data sent by reusing objects
+          # 6. CHUNKED COMMIT AND PUSH
+          # We iterate through the years inside the cves/ folder
+          # and push them in groups to avoid server timeouts.
+          
+          YEARS=$(ls cves/)
+          for year in $YEARS; do
+            echo "Processing year: $year"
+            git add "cves/$year"
+            # Commit and push each year individually
+            if git commit -m "Sync CVE Data for $year: $(date)"; then
+              git push origin main
+            fi
+          done
+
+          # 7. Final push for everything else (root files like delta.json)
           git add .
-          git commit -m "Sync CVE Data: $(date)" || echo "No changes to sync"
-          git push origin main --force --thin
+          git commit -m "Finalizing Sync: $(date)" || echo "No extra files"
+          git push origin main
