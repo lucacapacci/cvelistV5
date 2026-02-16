@@ -1,7 +1,7 @@
-name: Repo Sync (Full)
+name: Repo Sync
 on:
   schedule:
-    - cron: '0 */2 * * *' # Running every 2 hours as this takes longer
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 jobs:
@@ -25,33 +25,33 @@ jobs:
           # 2. SAVE your sync file
           cp .github/workflows/sync.yml /home/runner/sync.yml_backup
 
-          # 3. Add source and fetch
+          # 3. Add source and fetch latest
           git remote add source https://github.com/CVEProject/cvelistV5.git
           git fetch source main --depth=1
 
-          # 4. Move to the latest state locally (but don't commit yet)
-          git reset --soft source/main
+          # 4. Force the working directory to match the source
+          # This makes the 'cves/' folder appear so the loop can see it
+          git checkout source/main -- .
 
-          # 5. Clean and Restore Workflows (so we don't push upstream workflows)
+          # 5. Clean and Restore Workflows
           rm -rf .github/workflows
           mkdir -p .github/workflows
           cp /home/runner/sync.yml_backup .github/workflows/sync.yml
 
           # 6. CHUNKED COMMIT AND PUSH
-          # We iterate through the years inside the cves/ folder
-          # and push them in groups to avoid server timeouts.
-          
+          # Pushing year-by-year to bypass GitHub's upload limits
           YEARS=$(ls cves/)
           for year in $YEARS; do
             echo "Processing year: $year"
             git add "cves/$year"
-            # Commit and push each year individually
-            if git commit -m "Sync CVE Data for $year: $(date)"; then
-              git push origin main
-            fi
+            # We use --allow-empty in case a year has no changes
+            git commit -m "Sync CVE Data for $year: $(date)" || echo "No changes for $year"
+            # Push every 5 years to speed it up while staying safe, 
+            # or just push every year for maximum reliability:
+            git push origin main
           done
 
-          # 7. Final push for everything else (root files like delta.json)
+          # 7. Final push for root files (delta.json, etc.)
           git add .
           git commit -m "Finalizing Sync: $(date)" || echo "No extra files"
           git push origin main
