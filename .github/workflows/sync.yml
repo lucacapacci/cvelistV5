@@ -1,31 +1,53 @@
-- name: Sync
+name: Repo Sync
+on:
+  schedule:
+    - cron: '0 */1 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-code:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync and Clean
         run: |
           # 1. Setup identity
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 2. Increase Git limits for large repo handling
+          # 2. Optimization for Massive Repositories
+          # Increase buffer size to 500MB to prevent 'index-pack' timeouts
           git config --global http.postBuffer 524288000
+          # Disable compression to save CPU/Memory on the runner during push
           git config --global core.compression 0
+          # Increase the amount of data we can receive
+          git config --global http.maxRequestBuffer 100M
 
           # 3. SAVE your sync file
           cp .github/workflows/sync.yml /home/runner/sync.yml_backup
 
-          # 4. Add source and fetch ONLY the latest commit
+          # 4. Add source and fetch ONLY the latest state
           git remote add source https://github.com/CVEProject/cvelistV5.git
           git fetch source main --depth=1
 
-          # 5. Overwrite local state
+          # 5. Overwrite your local branch with their main
           git reset --hard source/main
 
-          # 6. Clean and Restore Workflows
+          # 6. Clean their workflows so GitHub doesn't block the push
           rm -rf .github/workflows
+          
+          # 7. Restore YOUR sync file
           mkdir -p .github/workflows
           cp /home/runner/sync.yml_backup .github/workflows/sync.yml
 
-          # 7. Push with optimized settings
+          # 8. Push to YOUR main branch
+          # --thin reduces the amount of data sent by reusing objects
           git add .
           git commit -m "Sync CVE Data: $(date)" || echo "No changes to sync"
-          
-          # Use '--thin' to reduce data transfer size
           git push origin main --force --thin
