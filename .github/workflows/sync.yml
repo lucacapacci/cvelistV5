@@ -1,4 +1,4 @@
-name: Repo Sync
+name: Repo Sync (Full Chunked)
 on:
   schedule:
     - cron: '0 */2 * * *'
@@ -22,43 +22,40 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config --global http.postBuffer 524288000
 
-          # 2. SAVE your sync file to a safe place
+          # 2. SAVE your sync file
           cp .github/workflows/sync.yml /home/runner/sync.yml_backup
 
           # 3. Add source and fetch
           git remote add source https://github.com/CVEProject/cvelistV5.git
           git fetch source main --depth=1
 
-          # 4. EXPORT source data to a temporary folder (avoids .github issues)
-          mkdir /home/runner/source_data
-          git --git-dir=.git checkout source/main -- cves/ delta.json deltaLog.json
+          # 4. Extract ONLY the cves folder from source
+          # This avoids pulling their .github/workflows and triggering security blocks
+          git checkout source/main -- cves/
 
-          # 5. Completely wipe local repo files (except .git) to ensure a clean sync
-          # We leave .github/workflows alone for a second
-          find . -maxdepth 1 ! -name '.git' ! -name '.github' -exec rm -rf {} +
-
-          # 6. Move the CVE data into your repo
-          cp -r cves/ .
-          cp *.json . || echo "No json files in root"
-
-          # 7. Force-restore ONLY your sync.yml
-          rm -rf .github/workflows/*
+          # 5. Clean and Restore YOUR workflow
+          # We ensure your sync.yml is the ONLY thing in .github/workflows
+          find .github/workflows -type f -not -name 'sync.yml' -delete
           mkdir -p .github/workflows
           cp /home/runner/sync.yml_backup .github/workflows/sync.yml
 
-          # 8. CHUNKED COMMIT AND PUSH
-          # This avoids the "refusing to allow a GitHub App to update workflow" error
-          # because we never 'git add' their workflow files.
-          YEARS=$(ls cves/)
+          # 6. CHUNKED COMMIT AND PUSH
+          # Iterate through the years. We use a sort to go in order.
+          YEARS=$(ls cves/ | grep -E '^[0-9]{4}$' | sort)
           for year in $YEARS; do
             echo "Processing year: $year"
             git add "cves/$year"
+            
+            # Only commit and push if there are actual changes for this year
             if git commit -m "Sync CVE Data for $year: $(date)"; then
+              echo "Pushing changes for $year..."
               git push origin main
+            else
+              echo "No changes detected for $year."
             fi
           done
 
-          # 9. Final push for root JSONs
-          git add delta.json deltaLog.json || echo "No root files"
-          git commit -m "Finalizing Sync: $(date)" || echo "No extra files"
+          # 7. Final push for files in cves/ root (like delta.json)
+          git add cves/*.json
+          git commit -m "Finalizing Sync (Delta Files): $(date)" || echo "No delta changes"
           git push origin main
