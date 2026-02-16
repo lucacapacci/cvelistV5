@@ -22,36 +22,43 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config --global http.postBuffer 524288000
 
-          # 2. SAVE your sync file
+          # 2. SAVE your sync file to a safe place
           cp .github/workflows/sync.yml /home/runner/sync.yml_backup
 
-          # 3. Add source and fetch latest
+          # 3. Add source and fetch
           git remote add source https://github.com/CVEProject/cvelistV5.git
           git fetch source main --depth=1
 
-          # 4. Force the working directory to match the source
-          # This makes the 'cves/' folder appear so the loop can see it
-          git checkout source/main -- .
+          # 4. EXPORT source data to a temporary folder (avoids .github issues)
+          mkdir /home/runner/source_data
+          git --git-dir=.git checkout source/main -- cves/ delta.json deltaLog.json
 
-          # 5. Clean and Restore Workflows
-          rm -rf .github/workflows
+          # 5. Completely wipe local repo files (except .git) to ensure a clean sync
+          # We leave .github/workflows alone for a second
+          find . -maxdepth 1 ! -name '.git' ! -name '.github' -exec rm -rf {} +
+
+          # 6. Move the CVE data into your repo
+          cp -r cves/ .
+          cp *.json . || echo "No json files in root"
+
+          # 7. Force-restore ONLY your sync.yml
+          rm -rf .github/workflows/*
           mkdir -p .github/workflows
           cp /home/runner/sync.yml_backup .github/workflows/sync.yml
 
-          # 6. CHUNKED COMMIT AND PUSH
-          # Pushing year-by-year to bypass GitHub's upload limits
+          # 8. CHUNKED COMMIT AND PUSH
+          # This avoids the "refusing to allow a GitHub App to update workflow" error
+          # because we never 'git add' their workflow files.
           YEARS=$(ls cves/)
           for year in $YEARS; do
             echo "Processing year: $year"
             git add "cves/$year"
-            # We use --allow-empty in case a year has no changes
-            git commit -m "Sync CVE Data for $year: $(date)" || echo "No changes for $year"
-            # Push every 5 years to speed it up while staying safe, 
-            # or just push every year for maximum reliability:
-            git push origin main
+            if git commit -m "Sync CVE Data for $year: $(date)"; then
+              git push origin main
+            fi
           done
 
-          # 7. Final push for root files (delta.json, etc.)
-          git add .
+          # 9. Final push for root JSONs
+          git add delta.json deltaLog.json || echo "No root files"
           git commit -m "Finalizing Sync: $(date)" || echo "No extra files"
           git push origin main
