@@ -1,5 +1,5 @@
 {
-  "fetchTime": "2026-02-27T06:36:21.119Z",
+  "fetchTime": "2026-02-27T07:26:08.831Z",
   "numberOfChanges": 1,
   "new": [],
   "updated": [
@@ -7,7 +7,7 @@
       "cveId": "CVE-2024-1394",
       "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2024-1394",
       "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2024/1xxx/CVE-2024-1394.json",
-      "dateUpdated": "2026-02-27T06:34:47.173Z"
+      "dateUpdated": "2026-02-27T07:25:58.910Z"
     }
   ],
   "error": []
