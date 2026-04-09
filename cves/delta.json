@@ -1,24 +1,30 @@
 {
-  "fetchTime": "2026-04-09T06:50:10.160Z",
-  "numberOfChanges": 3,
+  "fetchTime": "2026-04-09T09:55:28.202Z",
+  "numberOfChanges": 4,
   "new": [
     {
-      "cveId": "CVE-2026-5852",
-      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2026-5852",
-      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/5xxx/CVE-2026-5852.json",
-      "dateUpdated": "2026-04-09T06:15:15.694Z"
+      "cveId": "CVE-2025-62188",
+      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2025-62188",
+      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2025/62xxx/CVE-2025-62188.json",
+      "dateUpdated": "2026-04-09T09:27:13.570Z"
     },
     {
-      "cveId": "CVE-2026-5853",
-      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2026-5853",
-      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/5xxx/CVE-2026-5853.json",
-      "dateUpdated": "2026-04-09T06:30:21.107Z"
+      "cveId": "CVE-2026-34184",
+      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2026-34184",
+      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/34xxx/CVE-2026-34184.json",
+      "dateUpdated": "2026-04-09T09:41:08.526Z"
     },
     {
-      "cveId": "CVE-2026-5854",
-      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2026-5854",
-      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/5xxx/CVE-2026-5854.json",
-      "dateUpdated": "2026-04-09T06:45:18.857Z"
+      "cveId": "CVE-2026-34185",
+      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2026-34185",
+      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/34xxx/CVE-2026-34185.json",
+      "dateUpdated": "2026-04-09T09:41:15.531Z"
+    },
+    {
+      "cveId": "CVE-2026-4901",
+      "cveOrgLink": "https://www.cve.org/CVERecord?id=CVE-2026-4901",
+      "githubLink": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/4xxx/CVE-2026-4901.json",
+      "dateUpdated": "2026-04-09T09:40:59.143Z"
     }
   ],
   "updated": [],
